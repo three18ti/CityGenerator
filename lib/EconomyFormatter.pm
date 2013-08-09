@@ -45,9 +45,10 @@ printResources strips out important info from a City object and returns formatte
 
 ###############################################################################
 sub printResources {
-    my ($city) = @_;
+    my $city = shift;
+
     my $content = "";
-    if ( scalar( @{ $city->{'resources'} } ) > 0 ) {
+    if ( @{ $city->{'resources'} } ) {
         $content .= "<p>$city->{'name'} is known for the following resources:</p>\n";
         $content .= "<ul class='threecolumn'>";
         foreach my $resource ( @{ $city->{'resources'} } ) {
@@ -62,10 +63,25 @@ sub printResources {
     return $content;
 }
 
+sub resource_template {
+    return <<"END_RESOURCE_TEMPLATE"
+[% IF city.resources %]
+    <p> [% city.name %] is known for the following resources:</p>
+    <ul class='threecolumn'>
+    [% FOREACH resource IN city.resources %]
+        <li> [% resource.content %] </li>
+    [% END %]
+    </ul>
+[% ELSE %]
+    <p>There are no resources worth mentioning.</p>
+[% END %]
+END_RESOURCE_TEMPLATE
+}
+
 sub printBusinesses {
     my ($city) = @_;
     my $content = "";
-    if ( scalar( keys %{ $city->{'businesses'} } ) > 0 ) {
+    if ( %{ $city->{'businesses'} } ) {
         $content .= "<p>You can find the following establishments in $city->{'name'}, among others:</p>\n";
         $content .= "<ul class='threecolumn'>";
         my @resourcenames=keys %{ $city->{'businesses'} } ;
@@ -84,6 +100,21 @@ sub printBusinesses {
     }
 
     return $content;
+}
+
+sub businesses_template {
+    return<<"END_BUSINESS_TEMPLATE";
+[% IF city.businesses %]
+    <p>You can find the following establishments in [% city.name %], among others:</p>
+    <ul class='threecolumn'>
+    [% FOREACH resource IN city.business_list %]
+        <li> [% resource.count %] [% resource.name %] </li>
+    [% END %]
+    </ul>
+[% ELSE %]
+    <p>There are no businesses worth mentioning.</p>
+[% END %]
+END_BUSINESS_TEMPLATE
 }
 
 
