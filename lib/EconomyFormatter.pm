@@ -34,6 +34,7 @@ use Lingua::EN::Numbers qw(num2en);
 use Number::Format;
 use POSIX;
 use version;
+use Template;
 
 ###############################################################################
 
@@ -46,21 +47,15 @@ printResources strips out important info from a City object and returns formatte
 ###############################################################################
 sub printResources {
     my $city = shift;
+    my $content;
 
-    my $content = "";
-    if ( @{ $city->{'resources'} } ) {
-        $content .= "<p>$city->{'name'} is known for the following resources:</p>\n";
-        $content .= "<ul class='threecolumn'>";
-        foreach my $resource ( @{ $city->{'resources'} } ) {
-            $content .= "<li>" . $resource->{'content'} . "</li>";
-        }
+    my $tt = Template->new;
 
-        $content .= "</ul>";
-    } else {
-        $content .= "<p>There are no resources worth mentioning.</p>\n";
-    }
+    my $template = resource_template ();
 
-    return $content;
+    $tt->process(\$template, $city, \$content);
+
+    return $content || $tt->error;
 }
 
 sub resource_template {
