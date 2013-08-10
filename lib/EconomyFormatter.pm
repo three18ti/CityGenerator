@@ -73,46 +73,6 @@ sub resource_template {
 END_RESOURCE_TEMPLATE
 }
 
-sub printBusinesses {
-    my ($city) = @_;
-    my $content = "";
-    if ( %{ $city->{'businesses'} } ) {
-        $content .= "<p>You can find the following establishments in $city->{'name'}, among others:</p>\n";
-        $content .= "<ul class='threecolumn'>";
-        my @resourcenames=keys %{ $city->{'businesses'} } ;
-        @resourcenames = shuffle @resourcenames;
-        foreach my $resource ( sort @resourcenames[0 .. (5 + $city->{'size_modifier'})] ) {
-            my @resources = split( /,/x, $resource );
-            @resources = shuffle(@resources);
-            my $resourcename = pop @resources;
-            my $count        = $city->{'businesses'}->{$resource}->{'count'};
-            $content .= "<li>$count " . PL_N( $resourcename, $count ) . "</li>";
-        }
-
-        $content .= "</ul>";
-    } else {
-        $content .= "<p>There are no businesses worth mentioning.</p>\n";
-    }
-
-    return $content;
-}
-
-sub businesses_template {
-    return<<"END_BUSINESS_TEMPLATE";
-[% IF city.businesses %]
-    <p>You can find the following establishments in [% city.name %], among others:</p>
-    <ul class='threecolumn'>
-    [% FOREACH resource IN city.business_list %]
-        <li> [% resource.count %] [% resource.name %] </li>
-    [% END %]
-    </ul>
-[% ELSE %]
-    <p>There are no businesses worth mentioning.</p>
-[% END %]
-END_BUSINESS_TEMPLATE
-}
-
-
 1;
 
 __END__

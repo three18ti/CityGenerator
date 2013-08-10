@@ -1,0 +1,3 @@
+apt-get install libxml2-dev
+cpanm XML::LibXML::SAX Lingua::Conjunction Lingua::EN::Inflect Lingua::EN::Numbers
+grep -ri '^use ' ./* | grep -v 'strict\|warnings\|vars\|base\|lib' | perl -F'\s+' -anE '$modules{$F[1]} = 1; END { map { s/;//; say } keys %modules}' | cpanm
