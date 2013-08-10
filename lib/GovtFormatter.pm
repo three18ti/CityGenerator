@@ -5,6 +5,7 @@ package GovtFormatter;
 
 use strict;
 use warnings;
+use Template;
 use vars qw(@ISA @EXPORT_OK $VERSION $XS_VERSION $TESTING_PERL_ONLY);
 use base qw(Exporter);
 @EXPORT_OK = qw( printSummary printCrime printLeader printMilitary printLaw );
@@ -145,23 +146,46 @@ printMilitary shows details of current military status.
 ###############################################################################
 sub printMilitary {
     my ($city)  = @_;
-    my $content = "";
+    my $content;
 
     my $walls="lack of defensible wall";
     if   (defined $city->{'walls'}->{'condition'} ){
         my $walls=$city->{'walls'}->{'condition'}." ".$city->{'walls'}->{'condition'} ;
     }
 
-    my $tactic=define_tactics($city);
+    $city->{'the_walls'} = $walls;
+    
+    $city->{tactic} = define_tactics($city);
+
+    my $tt  = Template->new;
+    
+    my $template = templateMilitary();
+
+    $tt->process(\$template, $city, \$content);
+
+    return $content || $tt->error;
 
     $content.="$city->{'name'} has ".A($city->{'military_description'})." attitude towards the military. \n";
-    $content.="Their standing army of $city->{'military'}->{'active_troops'} citizens ($city->{'military'}->{'active_percent'}%) is at the ready, with a reserve force of $city->{'military'}->{'reserve_troops'} ($city->{'military'}->{'reserve_percent'}%). \n";
+    $content.="Their standing army of $city->{'military'}->{'active_troops'} citizens ($city->{'military'}->{'active_percent'}%) " 
+                 . "is at the ready, with a reserve force of $city->{'military'}->{'reserve_troops'} ($city->{'military'}->{'reserve_percent'}%). \n";
     $content.="Of the active duty military, $city->{'military'}->{'para_troops'} ($city->{'military'}->{'para_percent'}%) are special forces. \n";
     $content.="Due to their $city->{'military_description'} attitude and $walls, $city->{'name'} is $city->{'military'}->{'fortification'} fortified. \n"; 
     $content.="$city->{'name'} fighters are $city->{'military'}->{'weapon reputation'} for their use of $city->{'military'}->{'favored weapon'} in battle. \n";
     $content.="They are $city->{'military'}->{'reputation'} for their $city->{'military'}->{'favored tactic'} and are considered $city->{'military'}->{'preparation'} skilled in battle. \n";
 
-    return $content;
+}
+
+sub templateMilitary {
+    return <<"END_MILITARY_TEMPLATE";
+[%- USE infl = Lingua.EN.Inflec; -%]
+[% city.name %] has A( [% city.military_description %] ) attitude towards the military.
+Their standing army of [% city.military.active_troops %] citizens ([% city.military.active_percent %]%) is at the ready, with a reserve force of [% city.military. reserve_troops %] ([% city.military.reserve_percent %] %).
+Of the active duty military, [% city.military.para_troops %] ([% city.military.para_percent %]%) are special forces.
+Due to their [% city.military_description %] attitude and [% city.the_walls %], [% city.name %] is [% city.military.fortification %] fortified.
+[% city.name %] fighters are [% city.military.weapon reputation %] for their use of [% city.military.favored weapon %] in battle.
+They are [% city.military.reputation %] for their [% city.military.favored tactic %] and are considered [% city.military.preparation %] skilled in battle.
+END_MILITARY_TEMPLATE
+
 }
 
 
