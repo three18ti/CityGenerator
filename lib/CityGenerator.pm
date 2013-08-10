@@ -37,6 +37,7 @@ use Math::Complex ':pi';
 use NPCGenerator;
 use RegionGenerator;
 use GovtGenerator;
+use MilitaryGenerator;
 use TavernGenerator;
 use List::Util 'shuffle', 'min', 'max';
 use POSIX;
@@ -44,6 +45,7 @@ use version;
 use XML::Simple;
 
 my $xml = XML::Simple->new();
+local $ENV{XML_SIMPLE_PREFERRED_PARSER} = 'XML::Parser';
 
 ###############################################################################
 
@@ -171,6 +173,34 @@ sub generate_base_stats {
     }
     return $city;
 } ## end sub generate_base_stats
+
+###############################################################################
+
+=head2 set_stat_descriptions
+
+select the stat descriptions for the 6 major stats.
+
+=cut
+
+###############################################################################
+sub set_stat_descriptions {
+    #TODO merge this with base_stats like the other cool kids do.
+    #This will require refactoring base_stats to use 1-100 rather that -5 - 5
+    my ($city) = @_;
+    GenericGenerator::set_seed( $city->{'seed'} + 23 );
+
+    foreach my $stat ( sort keys %{ $city->{'stats'} } ) {
+        $city->{'stats'}->{$stat} = 0 if ( !defined $city->{'stats'}->{$stat} );
+        #FIXME adjectives should be an ordered array, not a random array, like govt does.
+        my $statoption
+            = roll_from_array( $city->{'stats'}->{$stat}, $xml_data->{ $stat . "_description" }->{'option'} );
+        $city->{ $stat . "_description" } = rand_from_array( $statoption->{'option'} )->{'content'}
+            if ( !defined $city->{ $stat . "_description" } );
+    }
+
+    return $city;
+}
+
 
 
 ###############################################################################
@@ -301,8 +331,9 @@ sub flesh_out_city {
     generate_crime($city);
     set_dominance($city);
 
-    $city->{'govt'}      = GovtGenerator::create_govt( { 'seed' => $city->{'seed'} } );
-    $city->{'climate'}   = ClimateGenerator::create_climate( { 'seed' => $city->{'seed'} } );
+    $city->{'govt'}      = GovtGenerator::create_govt( {            'seed' => $city->{'seed'} } );
+    $city->{'military'}  = MilitaryGenerator::create_military( {    'seed' => $city->{'seed'},  } );
+    $city->{'climate'}   = ClimateGenerator::create_climate( {      'seed' => $city->{'seed'} } );
     $city->{'climate'}   = ClimateGenerator::flesh_out_climate( $city->{'climate'} );
     $city->{'astronomy'} = AstronomyGenerator::create_astronomy( { 'seed' => $city->{'seed'} } );
 
@@ -782,29 +813,7 @@ sub set_laws {
     }
     return $city;
 } ## end sub set_laws
-###############################################################################
 
-=head2 set_stat_descriptions
-
-select the stat descriptions for the 6 major stats.
-
-=cut
-
-###############################################################################
-sub set_stat_descriptions {
-    my ($city) = @_;
-    GenericGenerator::set_seed( $city->{'seed'} + 23 );
-
-    foreach my $stat ( sort keys %{ $city->{'stats'} } ) {
-        $city->{'stats'}->{$stat} = 0 if ( !defined $city->{'stats'}->{$stat} );
-        my $statoption
-            = roll_from_array( $city->{'stats'}->{$stat}, $xml_data->{ $stat . "_description" }->{'option'} );
-        $city->{ $stat . "_description" } = rand_from_array( $statoption->{'option'} )->{'content'}
-            if ( !defined $city->{ $stat . "_description" } );
-    }
-
-    return $city;
-}
 
 ###############################################################################
 
@@ -1074,7 +1083,7 @@ sub generate_crime {
     my $moralmod = int( ( $city->{'moral'} - 50 ) / 10 );
 
     $city->{'crime_roll'}
-        = int( &d(100) - $city->{'stats'}->{'education'} + $city->{'stats'}->{'authority'} + $moralmod )
+        = min(100, max(1,int( &d(100) - $city->{'stats'}->{'education'} + $city->{'stats'}->{'authority'} + $moralmod )))
         if ( !defined $city->{'crime_roll'} );
     $city->{'crime_description'}
         = roll_from_array( $city->{'crime_roll'}, $xml_data->{'crime'}->{'option'} )->{'content'}
